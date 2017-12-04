@@ -84,6 +84,13 @@ unsigned int getWriteDBPeriod_c                   ();
 void         setMaxDBSize_c(unsigned int        sz );
 unsigned int getMaxDBSize_c                       ();
 
+// Задать кодировку входного текста
+void   setCode_CP866_c();
+void   setCode_UTF8_c ();
+//===================================================================================
+
+
+
 #ifdef __cplusplus
 }
 #endif

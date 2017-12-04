@@ -29,7 +29,7 @@ Log_DB::Log_DB()
 
     writeDBPeriod = 500000;        // Период записи в БД лога сообщений в микросекундах
 
-    logLevel = LOG_LEVELS::INFO;
+    logLevel = LOG_LEVELS::WARNING;
 
     // Чистка очереди сообщений под мутексом
     mutexQuery.lock();
@@ -391,17 +391,21 @@ string _charToString(const char *source)
 }
 
 
-int pInt = 0;
-EncodeConvertor ecStr;
+int                pInt    =    0;
+EncodeConvertor    ecStr;
+bool               isCP866 = true;  // Флаг того, что текст поступает в логгер в 866 кодировке
 
 //===================================================================================
 // Обработка строки для безопасного помещения в sql запрос
-string _prepareMess(string &sourceStr)
+string _prepareMess(string &sourceStr )
 {
     char *safeMess;
-    pInt = 0;
     mutexLogDB.lock();
-    sourceStr = ecStr.CP866toUTF8(sourceStr, &pInt);
+    if (isCP866)
+    {
+        pInt = 0;
+        sourceStr = ecStr.CP866toUTF8(sourceStr, &pInt);
+    }
     safeMess =  sqlite3_mprintf("%q", sourceStr.c_str());
     string tmp     = _charToString(safeMess);
     sqlite3_free(safeMess);
@@ -536,6 +540,11 @@ void logDBG_c (LOG_REGIONS  region, const char *const  fmt, ... )
 void          setLogLevel_c (LOG_LEVELS lvl)     {   logger.setLogLevel(lvl);    printf("--------> setLogLevel_c():: LOG LEVEL = %d\n", logger.getLogLevel());      };
 LOG_LEVELS getLogLevel_c                  ()     {   return logger.getLogLevel();      };
 
+
+//===================================================================================
+// Задать кодировку входного текста
+void   setCode_CP866_c() {isCP866 = true;  };
+void   setCode_UTF8_c()  {isCP866 = false; };
 
 //===================================================================================
 // Узнать/Задать Имя БД лога

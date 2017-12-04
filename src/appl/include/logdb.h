@@ -66,14 +66,14 @@ private:
 
     //---------------
     // Мутексы
-    mutex mutexQuery;               // Мутекс на доступ к очереди(вектору) на запись в БД
+    mutex          mutexQuery;      // Мутекс на доступ к очереди(вектору) на запись в БД
     //---------------
-    sqlite3 *loggerDb;              // Указатель на БД
-    string sqlRequest;              // Строка SQL-запроса в БД
-    string dB_Name;                 // Имя  БД лога
-    LOG_LEVELS logLevel;            // Уровень лога(что пишем, а что нет)
-    unsigned int maxQuerySize;      // макс длина очереди лога(для защиты от переполнения памяти)
-    unsigned int maxDBSize;         // макс количество записей в БД лога
+    sqlite3          *loggerDb;     // Указатель на БД
+    string          sqlRequest;     // Строка SQL-запроса в БД
+    string             dB_Name;     // Имя  БД лога
+    LOG_LEVELS        logLevel;     // Уровень лога(что пишем, а что нет)
+    unsigned int  maxQuerySize;     // макс длина очереди лога(для защиты от переполнения памяти)
+    unsigned int     maxDBSize;     // макс количество записей в БД лога
     unsigned int writeDBPeriod;     // Период записи сообщений в БД лога в микросекундах
 
     vector<LOG_MESSAGE> messagesQuery;    // Очередь сообщений, ожидающих запись в БД лога
@@ -117,7 +117,6 @@ public:
     // Узнать/Задать Уровень лога
     void setLogLevel(LOG_LEVELS ll) { logLevel = ll; };
     LOG_LEVELS getLogLevel() { return logLevel; };
-
 
     // Готовый интерфейс логгера с форматированным вводом
     bool log_ERR (const LOG_REGIONS region,  string  strMess );
