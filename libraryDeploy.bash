@@ -34,15 +34,15 @@ then
     exit 2;
 fi
 
-if ! [ -d ../fiscat/liblogDB/ ];
+if ! [ -d ../FisGo/liblogDB/ ];
 then
-    mkdir -p ../fiscat/liblogDB/
+    mkdir -p ../FisGo/liblogDB/
 fi
 
-cp src/appl/include/logdb_c_cpp.h ../fiscat/liblogDB/
+cp src/appl/include/logdb_c_cpp.h ../FisGo/liblogDB/
 if ! [ $? -eq 0 ];
 then
-    echo "Failed to patch fiscat(liblogDB.so) project!"
+    echo "Failed to patch FisGo(liblogDB.so) project!"
     echo "Deploy aborted..."
     exit 2;
 fi
