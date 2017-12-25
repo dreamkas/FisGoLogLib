@@ -1,4 +1,4 @@
-#Скрипт загрузки библиотеки ффд версии 1.1 прямо в проект fiscat и на кассу
+#Скрипт загрузки библиотеки оггера прямо в проект fiscat и на кассу Дримкас РФ(Касса Ф)
 #разработчика
 #!/bin/bash
 
@@ -16,9 +16,9 @@ then
     exit 2;
 fi
 
-if ! [ -d /usr/local/arm_linux_4.8/usr/lib/ ];
+if ! [ -d /usr/local/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/lib/ ];
 then
-    echo "arm-linux-4.8/usr/lib/ directory not found";
+    echo "/usr/local/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/lib/ directory not found";
     echo "Deploy aborted..."
     exit 2;
 fi
@@ -26,7 +26,7 @@ fi
 md5sum cmake-build-release/liblogDB.so \
     > cmake-build-release/ethalonLib_logDB_MD5
 
-sudo cp cmake-build-release/liblogDB.so /usr/local/arm_linux_4.8/usr/lib/
+sudo cp cmake-build-release/liblogDB.so /usr/local/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/lib/
 if ! [ $? -eq 0 ];
 then
     echo "Failed to patch compiler!"
