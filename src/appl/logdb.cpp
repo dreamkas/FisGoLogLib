@@ -12,7 +12,7 @@ unsigned int   loggerDBSize = 0;    // буфер для хранения размера БД(кол-во запи
 mutex mutexLogDB;                   // глобапльный мутекс обращения к БД лога
 
 
-#define MAX_MESS_SIZE  8192
+#define MAX_MESS_SIZE  65536
 
 char fmt_new[MAX_MESS_SIZE],
         mess[MAX_MESS_SIZE];     // Буфер для сообщений

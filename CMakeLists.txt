@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
-project(logDB)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_COMPILER arm-linux-g++)
 set(CMAKE_C_COMPILER arm-linux-gcc)
+
+project(logDB)
 
 set(CMAKE_C_FLAGS   "-std=gnu99")
 set(CMAKE_CXX_FLAGS "-std=c++11 -Werror -Wno-pmf-conversions -Wall")
