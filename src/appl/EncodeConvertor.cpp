@@ -66,7 +66,7 @@ string EncodeConvertor::convert(iconv_t cd, const string &val, int* err)
 {
 	if(cd == (iconv_t)-1) return "";
 	const size_t INBUFSIZE  = val.length() + 1;
-	const size_t OUTBUFSIZE = 16384;
+    const size_t OUTBUFSIZE = INBUFSIZE * 3;
 	size_t x = INBUFSIZE;
 
 	char *in_buf = new char[INBUFSIZE];
