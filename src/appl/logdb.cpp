@@ -473,15 +473,13 @@ extern "C" {
 #endif
 
 //===================================================================================
-//
-
 void logINFO_c (LOG_REGIONS  region, const char *const  fmt, ... )
 {
     if(logger.getLogLevel()< LOG_LEVELS::INFO)
         {return;}
     va_list args;
     va_start(args, fmt);
-    vsprintf ( mess,fmt, args );
+    vsnprintf ( mess, MAX_MESS_SIZE - 1, fmt, args );
     va_end(args);
     logger.log_INFO(region, mess );
 }
@@ -495,7 +493,7 @@ void logWARN_c (LOG_REGIONS  region, const char *const  fmt, ... )
         {return;}
     va_list args;
     va_start(args, fmt);
-    vsprintf ( mess,fmt, args );
+    vsnprintf ( mess, MAX_MESS_SIZE - 1, fmt, args );
     va_end(args);
     logger.log_WARN(region, mess );
 }
@@ -509,7 +507,7 @@ void logERR_c (LOG_REGIONS  region, const char *const  fmt, ... )
         {return;}
     va_list args;
     va_start(args, fmt);
-    vsprintf ( mess,fmt, args );
+    vsnprintf ( mess, MAX_MESS_SIZE - 1, fmt, args );
     va_end(args);
     logger.log_ERR(region, mess );
 }
@@ -528,7 +526,7 @@ void logDBG_c (LOG_REGIONS  region, const char *const  fmt, ... )
     va_list args;
     va_start(args, fmt);
 //    vsprintf ( mess,fmt_new, args );
-    vsprintf ( mess,fmt, args );
+    vsnprintf ( mess, MAX_MESS_SIZE - 1, fmt, args );
     //cout << " logDBG_c():: Mess to LOGGER: size = " << sizeof(mess) << " mess=|" << mess << "|" << endl;
     va_end(args);
     logger.log_DBG(region, mess );
