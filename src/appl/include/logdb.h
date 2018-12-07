@@ -31,6 +31,9 @@
 #include <sqlite3/sqlite3.h>
 #include <string.h>
 #include <mutex>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 #include "logdb_c_cpp.h" // Для доступа к энамам
 #include "EncodeConvertor.h"
@@ -62,8 +65,7 @@ class Log_DB
 {
 
 private:
-
-
+    atomic<bool> _work;             // Работа логгера
     //---------------
     // Мутексы
     mutex          mutexQuery;      // Мутекс на доступ к очереди(вектору) на запись в БД
@@ -129,6 +131,10 @@ public:
     // будет писать сообщения в БД из очереди(вектора) сообщений. Зациклен.
     void logDaemon();
     //------------------------------------------------------------------------
+    /**
+     * @brief stopLogger - выключить логгер
+     */
+    void stopLogger();
 
 };
 

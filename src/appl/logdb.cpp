@@ -5,7 +5,7 @@
 #include "logdb.h"
 #include "logdb_c_cpp.h"
 
-
+using namespace std;
 
 
 unsigned int   loggerDBSize = 0;    // буфер для хранения размера БД(кол-во записей)
@@ -22,6 +22,7 @@ char fmt_new[MAX_MESS_SIZE],
 // Конструктор с дефолтныйми значениями
 Log_DB::Log_DB()
 {
+    _work.store(true);
     dB_Name = "./logDb.db";     // Имя БД лога
     maxQuerySize = 1000;         // Макс число сообщений, ожидающих запись в БД лога
 
@@ -91,13 +92,13 @@ void Log_DB::logDaemon()
 {
     int qSize = 0;
     cout << "logDaemon():: START" << endl;
-    while(1)
+    _work.store(true);
+    while(_work.load())
     {
         qSize = messagesQuery.size();
         // Если есть сообщения на запись в БД
         if( qSize > 0 )
         {
-
             // Проверяем есть ли БД лога
             if(!_isLogDBExist())
             {
@@ -123,7 +124,7 @@ void Log_DB::logDaemon()
                 }
             }
             // Запись в БД лога одного сообщения
-            if( _writeMessQToDB() == true )
+            if( _writeMessQToDB())
             {
                 // Обновляем инфу о размере БД
                 _sizeOfLogDB();
@@ -145,7 +146,8 @@ void Log_DB::logDaemon()
         {
             //cout << " logDaemon():: No Messages" << endl;
         }
-        usleep(writeDBPeriod);
+        this_thread::sleep_for(chrono::microseconds(writeDBPeriod));
+        break;
     }// while
 }
 
@@ -418,7 +420,10 @@ string _prepareMess(string &sourceStr )
 // Запись ИНФО сообщения в лог(по факту добавление в очередь для последующего логгирования)
 bool Log_DB::_log_in_sql( LOG_LEVELS lvl, LOG_REGIONS region, string mess )
 {
-
+    if(!_work.load())
+    {
+        return true;
+    }
     //cout << "_log_in_sql: query size = " <<  messagesQuery.size() << endl;
     // Если размер очереди на запись в БД равен максимальному, то не добавляем новое сообщение
     if( messagesQuery.size() >= maxQuerySize )
@@ -442,7 +447,10 @@ bool Log_DB::_log_in_sql( LOG_LEVELS lvl, LOG_REGIONS region, string mess )
     return true;
 }
 
-
+void Log_DB::stopLogger()
+{
+    _work.store(false);
+}
 
 //===================================================================================
 //===================================================================================
@@ -462,6 +470,10 @@ void runLogDaemon()
     logger.logDaemon();
 }
 
+void stopLogDaemon()
+{
+    logger.stopLogger();
+}
 
 //===================================================================================
 //===================================================================================
