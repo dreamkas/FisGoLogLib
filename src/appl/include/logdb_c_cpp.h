@@ -98,6 +98,7 @@ void   setCode_UTF8_c ();
 //C++
 // Запуск асинхронной записи в БД. Должен быть запущен в отд потоке. Зациклен внутри. Пишет очередь в БД
 void runLogDaemon();
-
+// Стоп логгер
+void stopLogDaemon();
 
 #endif //LOGDB_LOGDB_C_CPP_H
