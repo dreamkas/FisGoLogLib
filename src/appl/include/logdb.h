@@ -37,6 +37,7 @@
 
 #include "logdb_c_cpp.h" // Для доступа к энамам
 #include "EncodeConvertor.h"
+#include "termcolor/termcolor.hpp"
 
 using namespace std;
 
@@ -135,7 +136,11 @@ public:
      * @brief stopLogger - выключить логгер
      */
     void stopLogger();
-
+    /**
+     * @brief setTermColor - установка цвета вывода в терминал
+     * @param lvl - уровень лога
+     */
+    void setTermColor(LOG_LEVELS lvl);
 };
 
 // Экземпляр класса логгера
