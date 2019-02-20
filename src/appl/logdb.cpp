@@ -147,7 +147,6 @@ void Log_DB::logDaemon()
             //cout << " logDaemon():: No Messages" << endl;
         }
         this_thread::sleep_for(chrono::microseconds(writeDBPeriod));
-        break;
     }// while
 }
 
