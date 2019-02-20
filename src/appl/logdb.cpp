@@ -415,7 +415,37 @@ string _prepareMess(string &sourceStr )
     return tmp;
 }
 
-
+void Log_DB::setTermColor(LOG_LEVELS lvl)
+{
+    switch (lvl)
+    {
+        case ERROR:
+        {
+            cout << termcolor::on_red;
+            break;
+        }
+        case WARNING:
+        {
+            cout << termcolor::underline << termcolor::yellow;
+            break;
+        }
+        case INFO:
+        {
+            cout << termcolor::blue;
+            break;
+        }
+        case DEBUG:
+        {
+            cout << termcolor::cyan;
+            break;
+        }
+        default:
+        {
+            cout << termcolor::reset;
+            break;
+        }
+    }
+}
 //===================================================================================
 // Запись ИНФО сообщения в лог(по факту добавление в очередь для последующего логгирования)
 bool Log_DB::_log_in_sql( LOG_LEVELS lvl, LOG_REGIONS region, string mess )
@@ -441,7 +471,9 @@ bool Log_DB::_log_in_sql( LOG_LEVELS lvl, LOG_REGIONS region, string mess )
     mutexQuery.lock();
     messagesQuery.push_back(tmpMess);
     // вывод сообщения на экран
-    cout << tmpMess.mess << endl;
+
+    setTermColor(lvl);
+    cout << tmpMess.mess << termcolor::reset << " " << endl;
     mutexQuery.unlock();
 
     return true;
