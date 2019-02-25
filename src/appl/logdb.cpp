@@ -431,7 +431,7 @@ void Log_DB::setTermColor(LOG_LEVELS lvl)
         }
         case INFO:
         {
-            cout << termcolor::blue;
+            cout << termcolor::green;
             break;
         }
         case DEBUG:
