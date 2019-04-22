@@ -132,7 +132,7 @@ void Log_DB::logDaemon()
             {
                 // Обновляем инфу о размере БД
                 _sizeOfLogDB();
-                if( loggerDBSize > maxDBSize || timeLoggerDBSize > maxDBSize )
+                if( (loggerDBSize > maxDBSize) || (timeLoggerDBSize > maxDBSize) )
                 {
                     if( !_deleteFromLogDB ( (int)(maxDBSize / 2) ) )
                     {
