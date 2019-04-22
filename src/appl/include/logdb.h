@@ -86,18 +86,18 @@ private:
 
     //---------------
     // Работа с БД
-    bool _makeLoggerRequest();                      // Выполнение запросов к БД (открытие+запрос+получение ответа)
+    bool _makeLoggerRequest();                  // Выполнение запросов к БД (открытие+запрос+получение ответа)
 
-    bool _createLoggerTable();                      // Метод создания таблицы логгера
+    bool _createLoggerTable();                 // Метод создания таблицы логгера
     bool _isLogDBExist();                      // Метод, проверки существует ли  таблица(БД) логгера
-    bool _writeMessQToDB();                      // Метод добавления сообщений из очереди в БД лога
-    int _sizeOfLogDB();                      // Метод, возвращающий размер таблицы лога
-    bool _deleteFromLogDB(int nRecords);         // Метод удаления из БД лога nRecords старых записей(защита от роста)
+    int _countOfTables();                      // Метод, возвращающий количество БД логгера
+    bool _writeMessQToDB();                    // Метод добавления сообщений из очереди в БД лога
+    int _sizeOfLogDB();                        // Метод, возвращающий размер таблицы лога
+    bool _deleteFromLogDB(int nRecords);       // Метод удаления из БД лога nRecords старых записей(защита от роста)
     //---------------
 public:
 
-    Log_DB();
-
+     Log_DB();
     ~Log_DB();
 
 

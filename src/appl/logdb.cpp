@@ -8,7 +8,11 @@
 using namespace std;
 
 
-unsigned int   loggerDBSize = 0;    // буфер для хранения размера БД(кол-во записей)
+      uint8_t  loggerDBSize      = 0;       // буфер для хранения размера БД(кол-во записей)
+      uint8_t  timeLoggerDBSize  = 0;       // буфер для хранения размера БД(кол-во записей)
+      uint8_t  countLoggerTables = 0;       // буфер для хранения количества таблиц
+const uint8_t  NUM_OF_TABLES     = 2;       // общее число таблиц логгера
+
 mutex mutexLogDB;                   // глобапльный мутекс обращения к БД лога
 
 
@@ -128,11 +132,11 @@ void Log_DB::logDaemon()
             {
                 // Обновляем инфу о размере БД
                 _sizeOfLogDB();
-                if(loggerDBSize > maxDBSize)
+                if( loggerDBSize > maxDBSize || timeLoggerDBSize > maxDBSize )
                 {
                     if( !_deleteFromLogDB ( (int)(maxDBSize / 2) ) )
                     {
-                        _log_in_sql(LOG_LEVELS ::ERROR, LOG_REGIONS::REG_DATABASE, "CANT DELETE RECORDS!");
+                        _log_in_sql(LOG_LEVELS ::ERROR, LOG_REGIONS::REG_DATABASE, "CAN'T DELETE RECORDS!");
                     }
                 }
             }
@@ -186,6 +190,22 @@ static int _callbackLogger(void *data, int argc, char **argv, char **azColName)
             }
 
         }
+        // Если запрашиваем число записей
+        if(column.compare("count(name)") == 0)
+        {
+            strLoggerSize = _charToString((char *)(argv[i] ? argv[i] : "NULL"));
+            if(strLoggerSize.compare("NULL") == 0)
+            {
+                countLoggerTables = 0;
+                cout << " _callbackLogger():: countLoggerTables = NULL" << endl;
+            }
+            else
+            {
+                countLoggerTables = atoi(strLoggerSize.c_str());
+            }
+
+        }
+
         // Если Парсим записи
         string value = _charToString((char *)(argv[i] ? argv[i] : "NULL"));
     }
@@ -243,23 +263,31 @@ bool Log_DB::_makeLoggerRequest()
 // Метод создания таблицы логгера
 bool Log_DB::_createLoggerTable()
 {
-    mutexLogDB.lock();
-    sqlRequest = "CREATE TABLE LOG("
+    lock_guard<mutex> locker(mutexLogDB);
+    sqlRequest = "CREATE TABLE IF NOT EXISTS LOG("
             "ID        INTEGER PRIMARY KEY AUTOINCREMENT,"  // Ключ ID(счетчик)
             "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
             "MESS          TEXT,"                           // тело сообщения
             "LVL        INTEGER,"                           // Уровень(инфо, ошибка...)
             "REGION     INTEGER);";                         // Область(ФН, Дисплей и тд)
+
+    sqlRequest+= "CREATE TABLE IF NOT EXISTS TIME_LOG("
+                 "ID        INTEGER PRIMARY KEY AUTOINCREMENT,"
+                 "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
+                 "MESS          TEXT);";                           // тело сообщения
+
+    sqlRequest+= "CREATE TRIGGER IF NOT EXISTS COPY_TIME_EVENTS AFTER INSERT ON LOG "
+                 "WHEN NEW.REGION= "+ to_string(REG_TIME) +
+                 " BEGIN "
+                 "INSERT INTO TIME_LOG(MESS) VALUES (NEW.MESS); "
+                 "END;";
     // Выполнение запроса
     if( !_makeLoggerRequest() )
     {
-        cout << "_createLoggerTable()::FAILED TO CREATE TABLE LOG!" << endl;
-        mutexLogDB.unlock();
+        cout << "_createLoggerTable()::FAILED TO CREATE LOG TABLES!" << endl;
         return false;
     }
-    mutexLogDB.unlock();
     // -----------------------------------
-
     return true;
 }
 
@@ -318,7 +346,14 @@ bool Log_DB::_deleteFromLogDB   (int nRecords)
     // -----------------------------------
     // Оборачиваем мутексом обращение к БД
     mutexLogDB.lock();
-    sqlRequest = "DELETE FROM LOG WHERE ID IN ( SELECT ID FROM LOG DESC LIMIT " + to_string(nRecords) + ");";
+    if(loggerDBSize > maxDBSize)
+    {
+        sqlRequest = "DELETE FROM LOG      WHERE ID IN ( SELECT ID FROM LOG      DESC LIMIT " + to_string(nRecords) + ");";
+    }
+    else if(timeLoggerDBSize > maxDBSize)
+    {
+        sqlRequest+= "DELETE FROM TIME_LOG WHERE ID IN ( SELECT ID FROM TIME_LOG DESC LIMIT " + to_string(nRecords) + ");";
+    }
 
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
@@ -341,15 +376,20 @@ int Log_DB::_sizeOfLogDB()
 {
     // -----------------------------------
     // Оборачиваем мутексом обращение к БД
-    mutexLogDB.lock();
+    lock_guard<mutex> locker(mutexLogDB);
+    sqlRequest = "SELECT COUNT(*) FROM TIME_LOG;";
+    if( !_makeLoggerRequest() )// Выполнение запроса
+    {
+        cout << " _sizeOfLogDB: ERROR " << endl;
+        return -1;
+    }
+    timeLoggerDBSize = loggerDBSize;
     sqlRequest = "SELECT COUNT(*) FROM LOG;";
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
         cout << " _sizeOfLogDB: ERROR " << endl;
-        mutexLogDB.unlock();
         return -1;
     }
-    mutexLogDB.unlock();
     // -----------------------------------
     if (loggerDBSize > 0)
     {
@@ -365,17 +405,39 @@ int Log_DB::_sizeOfLogDB()
 
 
 //===================================================================================
+// Метод, возвращающий размер таблицы лога
+int Log_DB::_countOfTables()
+{
+    // -----------------------------------
+    // Оборачиваем мутексом обращение к БД
+    lock_guard<mutex> locker(mutexLogDB);
+    sqlRequest = "select count(name) FROM sqlite_master WHERE type='table' AND  (name='TIME_LOG' OR name='LOG');";
+    if( !_makeLoggerRequest() )// Выполнение запроса
+    {
+        cout << " _countOfTables: ERROR " << endl;
+        return -1;
+    }
+    // -----------------------------------
+    if (countLoggerTables < NUM_OF_TABLES)
+    {
+        cout << "Not Enough log Tables!" << endl;
+    }
+
+    return countLoggerTables;
+}
+
+//===================================================================================
 // Метод, проверки существует ли  таблица(БД) логгера
 bool Log_DB::_isLogDBExist()
 {
-    if(_sizeOfLogDB() > 0)
+    countLoggerTables = _countOfTables();
+    if(countLoggerTables == NUM_OF_TABLES)
     {
-        //cout << " _isLogDBExist: TRUE, SIZE > 0" << endl;
         return true;
     }
     else
     {
-        cout << " Log DB Not Exist, SIZE = 0" << endl;
+        cout << " Log DB haven't got all tables, countLoggerTables = " << (int)countLoggerTables << endl;
         return false;
     }
 
@@ -614,92 +676,3 @@ unsigned int getMaxDBSize_c           () { return logger.getMaxDBSize();        
 #ifdef __cplusplus
 }
 #endif
-
-/*
-//===================================================================================
-//===================================================================================
-//========================== C++ ====================================================
-//===================================================================================
-//===================================================================================
-//
-void logINFO_cpp (const char *fmt, ... )
-{
-    va_list args;
-    va_start(args, fmt);
-
-
-    logger.log_INFO(LOG_REGIONS::DATABASE_REG,fmt, args);
-    va_end(args);
-}
-
-
-//===================================================================================
-//
-void logWARN_cpp (const char *const  fmt, ... )
-{
-    va_list args;
-    va_start(args, fmt);
-    logger.log_WARN(LOG_REGIONS::DATABASE_REG,fmt, args);
-    va_end(args);
-}
-
-
-//===================================================================================
-//
-void logERR_cpp (const char *const  fmt, ... )
-{
-    va_list args;
-    va_start(args, fmt);
-    logger.log_ERR(LOG_REGIONS::DATABASE_REG,fmt, args);
-    va_end(args);
-}
-
-
-//===================================================================================
-//
-void logDBG_cpp (const char *const  fmt, ... )
-{
-    va_list args;
-    va_start(args, fmt);
-    logger.log_DBG(LOG_REGIONS::DATABASE_REG,fmt, args);
-    va_end(args);
-}
- */
-
-/*
- * Лог с внутренним форматированием
- bool Log_DB::log_INFO (LOG_REGIONS region , const char *fmt, ... )
-{
-    cout << ">>>>>>>>>>>>> log_INFO :: START!" << endl;
-    //-----------------------------------------
-    // Сформировать новую строку формата
-    char fmt_new[512];
-    sprintf( fmt_new,
-             "%.*s\n",
-             256,  fmt );
-    cout << ">>>>>>>>>>>>> log_INFO :: fmt = '" << fmt << "'" << endl;
-    cout << ">>>>>>>>>>>>> log_INFO :: fmt_new = '" << fmt_new << "'" << endl;
-//    sprintf( fmt_new,
-//             "%.s\n", fmt );
-    //-----------------------------------------
-    char mess[1024];
-    va_list args;
-    va_start( args, fmt );
-    cout << "*************************************************************" << endl;
-    cout << "*************************************************************" << endl;
-    cout << "log_INFO vprintf( fmt, args): ";
-    vprintf( fmt, args);
-    cout << endl;
-    cout << "*************************************************************" << endl;
-    cout << "*************************************************************" << endl;
-    cout << "vsprintf result = '" << vsprintf ( mess,fmt_new, args ) << "'" << endl;// mess = "loader_()::DBG i = 144"
-    va_end( args );
-    //-----------------------------------------
-    string strMess = mess;
-cout << "_2_ >>>>>>>>>>>>> log_INFO :: START! strMess = |" << fmt << "|" << endl;
-string strMess = fmt;
-return _log_in_sql(LOG_LEVELS::INFO, region, strMess);
-}
-
-
-*/

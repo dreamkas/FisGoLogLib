@@ -48,6 +48,7 @@ typedef enum
     REG_SCANNER =          17,
     REG_PRINTER =          18,
     REG_KEYPAD =           19,
+    REG_TIME   =           20,
 
     OTHER =               100
 }LOG_REGIONS;
