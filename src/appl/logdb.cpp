@@ -8,8 +8,8 @@
 using namespace std;
 
 
-      uint8_t  loggerDBSize      = 0;       // буфер для хранения размера БД(кол-во записей)
-      uint8_t  timeLoggerDBSize  = 0;       // буфер для хранения размера БД(кол-во записей)
+      uint64_t loggerDBSize      = 0;       // буфер для хранения размера БД(кол-во записей)
+      uint64_t timeLoggerDBSize  = 0;       // буфер для хранения размера БД(кол-во записей)
       uint8_t  countLoggerTables = 0;       // буфер для хранения количества таблиц
 const uint8_t  NUM_OF_TABLES     = 2;       // общее число таблиц логгера
 
