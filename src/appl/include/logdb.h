@@ -77,6 +77,7 @@ private:
     LOG_LEVELS        logLevel;     // Уровень лога(что пишем, а что нет)
     unsigned int  maxQuerySize;     // макс длина очереди лога(для защиты от переполнения памяти)
     unsigned int     maxDBSize;     // макс количество записей в БД лога
+    uint64_t maxRowDbSize = 10000;  // Максимальное количество строк в базе лога
     unsigned int writeDBPeriod;     // Период записи сообщений в БД лога в микросекундах
 
     vector<LOG_MESSAGE> messagesQuery;    // Очередь сообщений, ожидающих запись в БД лога
@@ -141,6 +142,16 @@ public:
      * @param lvl - уровень лога
      */
     void setTermColor(LOG_LEVELS lvl);
+    /**
+     * @brief setMaxRowDbSize установка максимального количества строк в базе лога
+     * @param value максимальное количество строк в базе лога
+     */
+    void setMaxRowDbSize(const uint64_t &value) {maxRowDbSize = value;}
+    /**
+     * @brief getMaxRowDbSize получить максимальное количество строк в базе лога
+     * @return максимальное количество строк в базе лога
+     */
+    uint64_t getMaxRowDbSize() {return maxRowDbSize;}
 };
 
 // Экземпляр класса логгера

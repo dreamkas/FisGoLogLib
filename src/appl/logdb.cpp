@@ -281,6 +281,12 @@ bool Log_DB::_createLoggerTable()
                  " BEGIN "
                  "INSERT INTO TIME_LOG(MESS) VALUES (NEW.MESS); "
                  "END;";
+    sqlRequest += "CREATE TRIGGER IF NOT EXISTS MAX_LOG_SIZE AFTER INSERT "
+                  "ON LOG WHEN (SELECT COUNT(*) FROM LOG) > " + to_string(maxRowDbSize) +
+                  " BEGIN "
+                  "DELETE FROM LOG WHERE ID = (SELECT min(ID) FROM LOG); "
+                  "DELETE FROM TIME_LOG WHERE ID = (SELECT min(ID) FROM TIME_LOG); "
+                  "END;";
     // Выполнение запроса
     if( !_makeLoggerRequest() )
     {
