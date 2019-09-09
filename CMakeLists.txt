@@ -5,14 +5,14 @@ set(CMAKE_CXX_STANDARD 11)
 
 
 #dreamkas RF
-#set(CMAKE_CXX_COMPILER /usr/local/usr/bin/arm-linux-g++)
-#set(CMAKE_C_COMPILER /usr/local/usr/bin/arm-linux-gcc)
-#set(CMAKE_LIBRARY_PATH "/usr/local/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/lib")
-#include_directories(/usr/local/arm_linux_4.8/arm-nuvoton-linux-uclibceabi/include/)
+set(CMAKE_CXX_COMPILER /usr/local/usr/bin/arm-linux-g++)
+set(CMAKE_C_COMPILER /usr/local/usr/bin/arm-linux-gcc)
+set(CMAKE_LIBRARY_PATH "/usr/local/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/lib")
+include_directories(/usr/local/arm_linux_4.8/arm-nuvoton-linux-uclibceabi/include/)
 
 #dreamkas F
-set(CMAKE_CXX_COMPILER arm-linux-g++)
-set(CMAKE_C_COMPILER arm-linux-gcc)
+#set(CMAKE_CXX_COMPILER arm-linux-g++)
+#set(CMAKE_C_COMPILER arm-linux-gcc)
 
 
 set(CMAKE_C_FLAGS   "-std=gnu99")
