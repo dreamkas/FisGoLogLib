@@ -10,8 +10,9 @@ using namespace std;
 
       uint64_t loggerDBSize      = 0;       // буфер для хранения размера БД(кол-во записей)
       uint64_t timeLoggerDBSize  = 0;       // буфер для хранения размера БД(кол-во записей)
+      uint64_t fdLoggerDBSize  = 0;         // буфер для хранения размера БД(кол-во записей)
       uint8_t  countLoggerTables = 0;       // буфер для хранения количества таблиц
-const uint8_t  NUM_OF_TABLES     = 2;       // общее число таблиц логгера
+const uint8_t  NUM_OF_TABLES     = 3;       // общее число таблиц логгера
 
 mutex mutexLogDB;                   // глобапльный мутекс обращения к БД лога
 
@@ -132,7 +133,7 @@ void Log_DB::logDaemon()
             {
                 // Обновляем инфу о размере БД
                 _sizeOfLogDB();
-                if( (loggerDBSize > maxDBSize) || (timeLoggerDBSize > maxDBSize) )
+                if( (loggerDBSize > maxDBSize) || (timeLoggerDBSize > maxDBSize) || (fdLoggerDBSize > maxDBSize) )
                 {
                     if( !_deleteFromLogDB ( (int)(maxDBSize / 2) ) )
                     {
@@ -276,10 +277,21 @@ bool Log_DB::_createLoggerTable()
                  "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
                  "MESS          TEXT);";                           // тело сообщения
 
+    sqlRequest+= "CREATE TABLE IF NOT EXISTS FD_LOG("
+                 "ID        INTEGER PRIMARY KEY AUTOINCREMENT,"
+                 "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
+                 "MESS           TEXT);";                           // тело сообщения
+
     sqlRequest+= "CREATE TRIGGER IF NOT EXISTS COPY_TIME_EVENTS AFTER INSERT ON LOG "
                  "WHEN NEW.REGION= "+ to_string(REG_TIME) +
                  " BEGIN "
                  "INSERT INTO TIME_LOG(MESS) VALUES (NEW.MESS); "
+                 "END;";
+
+    sqlRequest+= "CREATE TRIGGER IF NOT EXISTS COPY_FD_EVENTS AFTER INSERT ON LOG "
+                 "WHEN NEW.REGION= "+ to_string(REG_FD) +
+                 " BEGIN "
+                 "INSERT INTO FD_LOG(MESS) VALUES (NEW.MESS); "
                  "END;";
     // Выполнение запроса
     if( !_makeLoggerRequest() )
@@ -339,7 +351,7 @@ bool Log_DB::_writeMessQToDB( )
 // Метод удаления из БД лога nRecords старых записей(защита от роста)
 bool Log_DB::_deleteFromLogDB   (int nRecords)
 {
-    if(nRecords < 0 || nRecords > 32000)
+    if(nRecords < 0)
     {
         return false;
     }
@@ -354,7 +366,10 @@ bool Log_DB::_deleteFromLogDB   (int nRecords)
     {
         sqlRequest+= "DELETE FROM TIME_LOG WHERE ID IN ( SELECT ID FROM TIME_LOG DESC LIMIT " + to_string(nRecords) + ");";
     }
-
+    else if(fdLoggerDBSize > maxDBSize)
+    {
+        sqlRequest+= "DELETE FROM FD_LOG WHERE ID IN ( SELECT ID FROM FD_LOG DESC LIMIT " + to_string(nRecords) + ");";
+    }
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
         cout << " _deleteFromLogDB: ERROR!!!! " << endl;
@@ -377,17 +392,27 @@ int Log_DB::_sizeOfLogDB()
     // -----------------------------------
     // Оборачиваем мутексом обращение к БД
     lock_guard<mutex> locker(mutexLogDB);
+    //time log
     sqlRequest = "SELECT COUNT(*) FROM TIME_LOG;";
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
-        cout << " _sizeOfLogDB: ERROR " << endl;
+        cout << " _sizeOfLogDB TIME_LOG: ERROR " << endl;
         return -1;
     }
     timeLoggerDBSize = loggerDBSize;
+    // fd log
+    sqlRequest = "SELECT COUNT(*) FROM FD_LOG;";
+    if( !_makeLoggerRequest() )// Выполнение запроса
+    {
+        cout << " _sizeOfLogDB FD_LOG: ERROR " << endl;
+        return -1;
+    }
+    fdLoggerDBSize = loggerDBSize;
+    // common log
     sqlRequest = "SELECT COUNT(*) FROM LOG;";
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
-        cout << " _sizeOfLogDB: ERROR " << endl;
+        cout << " _sizeOfLogDB LOG: ERROR " << endl;
         return -1;
     }
     // -----------------------------------
@@ -411,7 +436,7 @@ int Log_DB::_countOfTables()
     // -----------------------------------
     // Оборачиваем мутексом обращение к БД
     lock_guard<mutex> locker(mutexLogDB);
-    sqlRequest = "select count(name) FROM sqlite_master WHERE type='table' AND  (name='TIME_LOG' OR name='LOG');";
+    sqlRequest = "select count(name) FROM sqlite_master WHERE type='table' AND  (name='TIME_LOG' OR name='FD_LOG' OR name='LOG');";
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
         cout << " _countOfTables: ERROR " << endl;
