@@ -50,6 +50,7 @@ typedef enum
     REG_KEYPAD =           19,
     REG_TIME   =           20,
     REG_FD   =             21,
+    REG_PULSE   =          22,
 
     OTHER =               100
 }LOG_REGIONS;
