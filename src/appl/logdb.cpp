@@ -10,9 +10,10 @@ using namespace std;
 
       uint64_t loggerDBSize      = 0;       // буфер для хранения размера БД(кол-во записей)
       uint64_t timeLoggerDBSize  = 0;       // буфер для хранения размера БД(кол-во записей)
-      uint64_t fdLoggerDBSize  = 0;         // буфер для хранения размера БД(кол-во записей)
+      uint64_t fdLoggerDBSize    = 0;         // буфер для хранения размера БД(кол-во записей)
+      uint64_t pulseDBSize       = 0;         // буфер для хранения размера БД(кол-во записей)
       uint8_t  countLoggerTables = 0;       // буфер для хранения количества таблиц
-const uint8_t  NUM_OF_TABLES     = 3;       // общее число таблиц логгера
+const uint8_t  NUM_OF_TABLES     = 4;       // общее число таблиц логгера
 
 mutex mutexLogDB;                   // глобапльный мутекс обращения к БД лога
 
@@ -133,7 +134,7 @@ void Log_DB::logDaemon()
             {
                 // Обновляем инфу о размере БД
                 _sizeOfLogDB();
-                if( (loggerDBSize > maxDBSize) || (timeLoggerDBSize > maxDBSize) || (fdLoggerDBSize > maxDBSize) )
+                if( (loggerDBSize > maxDBSize) || (timeLoggerDBSize > maxDBSize) || (fdLoggerDBSize > maxDBSize) || (pulseDBSize > maxDBSize) )
                 {
                     if( !_deleteFromLogDB ( (int)(maxDBSize / 2) ) )
                     {
@@ -282,6 +283,11 @@ bool Log_DB::_createLoggerTable()
                  "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
                  "MESS           TEXT);";                           // тело сообщения
 
+    sqlRequest+= "CREATE TABLE IF NOT EXISTS PULSE_LOG("
+                 "ID        INTEGER PRIMARY KEY AUTOINCREMENT,"
+                 "DT        datetime default current_timestamp," // ДАТАВРЕМЯ сообщения
+                 "MESS           TEXT);";                           // тело сообщения
+
     sqlRequest+= "CREATE TRIGGER IF NOT EXISTS COPY_TIME_EVENTS AFTER INSERT ON LOG "
                  "WHEN NEW.REGION= "+ to_string(REG_TIME) +
                  " BEGIN "
@@ -293,6 +299,13 @@ bool Log_DB::_createLoggerTable()
                  " BEGIN "
                  "INSERT INTO FD_LOG(MESS) VALUES (NEW.MESS); "
                  "END;";
+
+    sqlRequest+= "CREATE TRIGGER IF NOT EXISTS COPY_PULSE_EVENTS AFTER INSERT ON LOG "
+                 "WHEN NEW.REGION= "+ to_string(REG_PULSE) +
+                 " BEGIN "
+                 "INSERT INTO PULSE_LOG(MESS) VALUES (NEW.MESS); "
+                 "END;";
+
     // Выполнение запроса
     if( !_makeLoggerRequest() )
     {
@@ -370,6 +383,10 @@ bool Log_DB::_deleteFromLogDB   (int nRecords)
     {
         sqlRequest+= "DELETE FROM FD_LOG WHERE ID IN ( SELECT ID FROM FD_LOG DESC LIMIT " + to_string(nRecords) + ");";
     }
+    else if(pulseDBSize > maxDBSize)
+    {
+        sqlRequest+= "DELETE FROM PULSE_LOG WHERE ID IN ( SELECT ID FROM PULSE_LOG DESC LIMIT " + to_string(nRecords) + ");";
+    }
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
         cout << " _deleteFromLogDB: ERROR!!!! " << endl;
@@ -408,6 +425,14 @@ int Log_DB::_sizeOfLogDB()
         return -1;
     }
     fdLoggerDBSize = loggerDBSize;
+    // pulse log
+    sqlRequest = "SELECT COUNT(*) FROM PULSE_LOG;";
+    if( !_makeLoggerRequest() )// Выполнение запроса
+    {
+        cout << " _sizeOfLogDB PULSE_LOG: ERROR " << endl;
+        return -1;
+    }
+    pulseDBSize = loggerDBSize;
     // common log
     sqlRequest = "SELECT COUNT(*) FROM LOG;";
     if( !_makeLoggerRequest() )// Выполнение запроса
@@ -436,7 +461,7 @@ int Log_DB::_countOfTables()
     // -----------------------------------
     // Оборачиваем мутексом обращение к БД
     lock_guard<mutex> locker(mutexLogDB);
-    sqlRequest = "select count(name) FROM sqlite_master WHERE type='table' AND  (name='TIME_LOG' OR name='FD_LOG' OR name='LOG');";
+    sqlRequest = "select count(name) FROM sqlite_master WHERE type='table' AND  (name='TIME_LOG' OR name='FD_LOG' OR name='LOG' OR name='PULSE_LOG');";
     if( !_makeLoggerRequest() )// Выполнение запроса
     {
         cout << " _countOfTables: ERROR " << endl;
